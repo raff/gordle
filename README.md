@@ -8,7 +8,7 @@ gordle is a helper for wordle
 ### Where:
 
     -words string
-        file with words (default "/usr/share/dict/words")
+        external file with words (i.e. "/usr/share/dict/words" on *nix like environments)
     -skip string
         skip words containing any of these letters
     -contain string

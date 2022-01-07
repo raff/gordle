@@ -2,15 +2,19 @@ package main
 
 import (
 	"bufio"
+	_ "embed"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
 )
 
 var (
-	wordfile = "/usr/share/dict/words"
+	//go:embed gordle.list
+	worddata string
+
 	words    []string
 	skips    string
 	contains string
@@ -27,7 +31,7 @@ func ContainsAll(s, chars string) bool {
 }
 
 func main() {
-	flag.StringVar(&wordfile, "words", wordfile, "file with words")
+	wordfile := flag.String("words", "", "external file with words")
 	flag.StringVar(&skips, "skip", "", "skip words containing any of these letters")
 	flag.StringVar(&contains, "contain", "", "accept only words that contain all these letters")
 	flag.Parse()
@@ -35,14 +39,22 @@ func main() {
 	skips = strings.ToUpper(strings.TrimSpace(skips))
 	contains = strings.ToUpper(strings.TrimSpace(contains))
 
-	f, err := os.Open(wordfile)
-	if err != nil {
-		log.Fatal(err)
+	var reader io.Reader
+
+	if *wordfile != "" {
+		f, err := os.Open(*wordfile)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		reader = f
+	} else {
+		reader = strings.NewReader(worddata)
 	}
 
 	words = make([]string, 0, 2048)
 
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(reader)
 
 	for scanner.Scan() {
 		w := strings.ToUpper(strings.TrimSpace(scanner.Text()))
@@ -52,11 +64,13 @@ func main() {
 		}
 	}
 
-	if err = scanner.Err(); err != nil {
+	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
 
-	f.Close()
+	if closer, ok := reader.(io.Closer); ok {
+		closer.Close()
+	}
 
 	matches := ""
 
