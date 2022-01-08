@@ -30,6 +30,22 @@ func ContainsAll(s, chars string) bool {
 	return true
 }
 
+func IsLower(c rune) bool {
+	return c >= 'a' && c <= 'z'
+}
+
+func IsUpper(c rune) bool {
+	return c >= 'A' && c <= 'Z'
+}
+
+func ToLower(c rune) rune {
+	return c - 'A' + 'a'
+}
+
+func ToUpper(c rune) rune {
+	return c - 'a' + 'A'
+}
+
 func main() {
 	wordfile := flag.String("words", "", "external file with words")
 	flag.StringVar(&skips, "skip", "", "skip words containing any of these letters")
@@ -75,38 +91,63 @@ func main() {
 	matches := ""
 
 	if flag.NArg() > 0 {
-		matches = strings.ToUpper(strings.TrimSpace(flag.Arg(0)))
+		matches = strings.TrimSpace(flag.Arg(0))
 
 		if len(matches) != 5 {
 			log.Fatal("5 letter word")
 		}
 	}
 
+	fmt.Println(match(matches))
+}
+
+func match(m string) (res []string) {
+	misplaced := ""
+
+	for _, c := range m {
+		if IsLower(c) {
+			misplaced += string(ToUpper(c))
+		}
+	}
+
+word_loop:
 	for _, w := range words {
 		if strings.ContainsAny(w, skips) {
 			continue
 		}
 
-		if !ContainsAll(w, contains) {
+		if !(ContainsAll(w, contains) && ContainsAll(w, misplaced)) {
 			continue
 		}
 
-		if matches != "" {
+		if w != "" {
 			compare := ""
 
-			for i, c := range matches {
-				if c == '-' || c == '#' || c == '*' {
-					compare += string(c)
-				} else {
+			for i, c := range m {
+				sc := string(c)
+
+				switch {
+				case IsUpper(c):
 					compare += string(w[i])
+
+				case IsLower(c):
+					if rune(w[i]) == ToUpper(c) {
+						continue word_loop
+					}
+					compare += sc
+
+				default: // symbol
+					compare += sc
 				}
 			}
 
-			if compare != matches {
+			if compare != m {
 				continue
 			}
 		}
 
-		fmt.Println(w)
+		res = append(res, w)
 	}
+
+	return
 }
