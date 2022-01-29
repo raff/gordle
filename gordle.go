@@ -9,6 +9,8 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"github.com/gobs/sortedmap"
 )
 
 var (
@@ -50,6 +52,7 @@ func main() {
 	wordfile := flag.String("words", "", "external file with words")
 	flag.StringVar(&skips, "skip", "", "skip words containing any of these letters")
 	flag.StringVar(&contains, "contain", "", "accept only words that contain all these letters")
+	sort := flag.Bool("sort", true, "sort by frequency")
 	flag.Parse()
 
 	skips = strings.ToUpper(strings.TrimSpace(skips))
@@ -98,7 +101,35 @@ func main() {
 		}
 	}
 
-	fmt.Println(match(matches))
+	list := match(matches)
+	if len(list) == 0 {
+		fmt.Println("No matches")
+		return
+	}
+
+	if !*sort {
+		fmt.Println(list)
+		return
+	}
+
+	// sort by frequency
+
+	byletter := map[string][]string{}
+	bycount := map[string]int{}
+
+	for _, w := range list {
+		k := w[0:1]
+
+		byletter[k] = append(byletter[k], w)
+	}
+
+	for k, v := range byletter {
+		bycount[k] = len(v)
+	}
+
+	for _, kv := range sortedmap.AsSortedByValue(bycount, false) {
+		fmt.Println(kv.Value, byletter[kv.Key])
+	}
 }
 
 func match(m string) (res []string) {
