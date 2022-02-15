@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/gobs/sortedmap"
@@ -52,7 +53,8 @@ func main() {
 	wordfile := flag.String("words", "", "external file with words")
 	flag.StringVar(&skips, "skip", "", "skip words containing any of these letters")
 	flag.StringVar(&contains, "contain", "", "accept only words that contain all these letters")
-	sort := flag.Bool("sort", true, "sort by frequency")
+	fsort := flag.Bool("sort", true, "sort by frequency")
+	all := flag.Bool("all", false, "show all words (answer and allowed) - false: only show valid answer words")
 	flag.Parse()
 
 	skips = strings.ToUpper(strings.TrimSpace(skips))
@@ -81,6 +83,10 @@ func main() {
 		if len(w) == 5 {
 			words = append(words, w)
 		}
+
+		if len(w) == 0 && *all == false { // first batch is valid answer words, 2nd batch is allowed words
+			break
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -90,6 +96,8 @@ func main() {
 	if closer, ok := reader.(io.Closer); ok {
 		closer.Close()
 	}
+
+	sort.Strings(words)
 
 	matches := ""
 
@@ -107,7 +115,7 @@ func main() {
 		return
 	}
 
-	if !*sort {
+	if !*fsort {
 		fmt.Println(list)
 		return
 	}
