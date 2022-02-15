@@ -128,7 +128,7 @@ func main() {
 	}
 
 	for _, kv := range sortedmap.AsSortedByValue(bycount, false) {
-		fmt.Println(kv.Value, byletter[kv.Key])
+		fmt.Println(kv.Key, kv.Value, byletter[kv.Key])
 	}
 }
 
