@@ -7,12 +7,18 @@ gordle is a helper for wordle
 
 ### Where:
 
-    -words string
-        external file with words (i.e. "/usr/share/dict/words" on *nix like environments)
-    -skip string
-        skip words containing any of these letters
+    -all
+        show all words (answer and allowed) - false: only show valid answer words
+    -list
+        list mode: the first word is the initial one, the remaining show the results
     -contain string
         accept only words that contain all these letters
+    -skip string
+        skip words containing any of these letters
+    -sort
+        sort by frequency (default true)
+    -words string
+        external file with words
 
 This commands prints a list of 5 letter words matching the specified parameters.
 
@@ -26,7 +32,3 @@ It is also possible to specify letters that should be in the word but are in the
 For example in the following pattern, the letter `C` is in the right place (first letter of the word) but the letters `ra` are in the wrong place:
 
 	C--ra
-
-
-
-    
