@@ -43,6 +43,16 @@ func IsLetter(c rune) bool {
 	return IsLower(c) || IsUpper(c)
 }
 
+func IsLetters(w string) bool {
+	for _, c := range w {
+		if !IsLetter(c) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func ToLower(c rune) rune {
 	return c - 'A' + 'a'
 }
@@ -104,22 +114,95 @@ func main() {
 
 	sort.Strings(words)
 
+	res := newResults(skips, contains)
+
 	if *asList {
-		processList(flag.Args(), *fsort)
+		res.processList(flag.Args())
 	} else if flag.NArg() > 0 {
-		processWord(flag.Arg(0), skips, contains, *fsort)
-	} else {
-		printList(words, *fsort)
+		res.processWord(flag.Arg(0))
+	}
+
+	res.printMatches(*fsort)
+}
+
+type results struct {
+	skips     string
+	contains  string // this is only used via command line
+	misplaced []string
+	correct   []string
+}
+
+func newResults(skips, contains string) *results {
+	return &results{
+		skips:     skips,
+		contains:  contains,
+		misplaced: make([]string, 5),
+		correct:   make([]string, 5),
 	}
 }
 
-func processWord(word, skips, contains string, sort bool) {
-	word = strings.TrimSpace(word)
-	if len(word) != 5 {
-		log.Fatalf("expected 5 letter word: %q", word)
+func (r *results) parse(in, out string) {
+	for i, c := range out {
+		sc := string(c)
+
+		switch {
+		case IsLower(c):
+			r.misplaced[i] += strings.ToUpper(sc)
+
+		case IsUpper(c):
+			r.correct[i] = sc
+
+		default:
+			r.skips += string(in[i])
+		}
+	}
+}
+
+func (r *results) matches() (res []string) {
+	var contains = r.contains
+
+	for _, c := range r.misplaced {
+		if c != "" {
+			contains += c
+		}
 	}
 
-	list := match(word, skips, contains)
+	for _, c := range r.correct {
+		if c != "" {
+			contains += c
+		}
+	}
+
+word_loop:
+	for _, w := range words {
+		if strings.ContainsAny(w, r.skips) {
+			continue
+		}
+
+		if !ContainsAll(w, contains) {
+			continue
+		}
+
+		for i, c := range w {
+			sc := string(c)
+
+			if strings.Contains(r.misplaced[i], sc) { // correct in the wrong place
+				continue word_loop
+			}
+
+			if r.correct[i] != "" && sc != r.correct[i] { // correct in the right place
+				continue word_loop
+			}
+		}
+
+		res = append(res, w)
+	}
+
+	return
+}
+
+func (r *results) printMatches(sort bool) {
+	list := r.matches()
 	if len(list) == 0 {
 		fmt.Println("No matches")
 		return
@@ -128,25 +211,35 @@ func processWord(word, skips, contains string, sort bool) {
 	printList(list, sort)
 }
 
-func processList(words []string, sort bool) {
-	var word, skips string
+func (r *results) processWord(word string) {
+	word = strings.TrimSpace(word)
+	if len(word) != 5 {
+		log.Fatalf("expected 5 letter word: %q", word)
+	}
 
-	for _, w := range words {
+	r.parse("     ", word)
+}
+
+func (r *results) processList(words []string) {
+	var word string
+
+	for i, w := range words {
 		w = strings.TrimSpace(w)
 		if len(w) != 5 {
 			log.Fatalf("expected 5 letter word: %q", w)
 		}
 
-		for p, c := range w {
-			if !IsLetter(c) {
-				skips += word[p : p+1]
+		if i%2 == 0 {
+			if !IsLetters(w) {
+				log.Fatalf("expected all letters")
 			}
+
+			word = w
+			continue
 		}
 
-		word = w
+		r.parse(word, w)
 	}
-
-	processWord(word, skips, "", sort)
 }
 
 func printList(list []string, sort bool) {
@@ -173,55 +266,4 @@ func printList(list []string, sort bool) {
 	for _, kv := range sortedmap.AsSortedByValue(bycount, false) {
 		fmt.Println(kv.Key, kv.Value, byletter[kv.Key])
 	}
-}
-
-func match(m, skips, contains string) (res []string) {
-	misplaced := ""
-
-	for _, c := range m {
-		if IsLower(c) {
-			misplaced += string(ToUpper(c))
-		}
-	}
-
-word_loop:
-	for _, w := range words {
-		if strings.ContainsAny(w, skips) {
-			continue
-		}
-
-		if !(ContainsAll(w, contains) && ContainsAll(w, misplaced)) {
-			continue
-		}
-
-		if w != "" {
-			compare := ""
-
-			for i, c := range m {
-				sc := string(c)
-
-				switch {
-				case IsUpper(c):
-					compare += string(w[i])
-
-				case IsLower(c):
-					if rune(w[i]) == ToUpper(c) {
-						continue word_loop
-					}
-					compare += sc
-
-				default: // symbol
-					compare += sc
-				}
-			}
-
-			if compare != m {
-				continue
-			}
-		}
-
-		res = append(res, w)
-	}
-
-	return
 }
