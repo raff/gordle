@@ -70,6 +70,7 @@ func main() {
 	fsort := flag.Bool("sort", true, "sort by frequency")
 	all := flag.Bool("all", false, "show all words (answer and allowed) - false: only show valid answer words")
 	asList := flag.Bool("list", false, "list mode: the first word is the initial one, the remaining show the results")
+	freq := flag.Bool("freq", false, "calculate letters frequency")
 	flag.Parse()
 
 	skips = strings.ToUpper(strings.TrimSpace(skips))
@@ -113,6 +114,23 @@ func main() {
 	}
 
 	sort.Strings(words)
+
+        if *freq { // calculate letter frequency
+            freqs := map[string]int{}
+
+            for _, w := range words {
+                for _, c := range w {
+                    sc := string(c)
+                    freqs[sc]++
+                }
+            }
+
+	    for _, kv := range sortedmap.AsSortedByValue(freqs, false) {
+                fmt.Println(kv.Key, kv.Value)
+            }
+
+            return
+        }
 
 	res := newResults(skips, contains)
 
