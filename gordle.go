@@ -115,22 +115,22 @@ func main() {
 
 	sort.Strings(words)
 
-        if *freq { // calculate letter frequency
-            freqs := map[string]int{}
+	if *freq { // calculate letter frequency
+		freqs := map[string]int{}
 
-            for _, w := range words {
-                for _, c := range w {
-                    sc := string(c)
-                    freqs[sc]++
-                }
-            }
+		for _, w := range words {
+			for _, c := range w {
+				sc := string(c)
+				freqs[sc]++
+			}
+		}
 
-	    for _, kv := range sortedmap.AsSortedByValue(freqs, false) {
-                fmt.Println(kv.Key, kv.Value)
-            }
+		for _, kv := range sortedmap.AsSortedByValue(freqs, false) {
+			fmt.Println(kv.Key, kv.Value)
+		}
 
-            return
-        }
+		return
+	}
 
 	res := newResults(skips, contains)
 
@@ -252,7 +252,7 @@ func (r *results) processList(words []string) {
 				log.Fatalf("expected all letters")
 			}
 
-			word = w
+			word = strings.ToUpper(w)
 			continue
 		}
 
